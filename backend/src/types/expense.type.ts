@@ -3,8 +3,8 @@ export interface Expense {
   amount: number;
   category: string;
   description: string;
-  date: string; // ISO string
-  createdAt: string; // ISO string
+  date: string;  
+  createdAt: string;  
   idempotencyKey: string;
 }
 
