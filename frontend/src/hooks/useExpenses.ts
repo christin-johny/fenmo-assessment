@@ -20,7 +20,7 @@ export const useExpenses = () => {
 
   const loadExpenses = useCallback(async (
     category?: string, 
-    sortDesc = true,
+    sortBy: string = 'newest',
     startDate?: string,
     endDate?: string,
     page = 1,
@@ -29,7 +29,7 @@ export const useExpenses = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const { data, meta } = await expenseService.fetchExpenses(category, sortDesc, startDate, endDate, page, limit);
+      const { data, meta } = await expenseService.fetchExpenses(category, sortBy, startDate, endDate, page, limit);
       setExpenses(data);
       setMeta(meta);
     } catch (err) {
@@ -52,7 +52,7 @@ export const useExpenses = () => {
       });
       
       // Reload current page/filters after adding
-      await loadExpenses(currentFilters.category, true, currentFilters.startDate, currentFilters.endDate, 1, 10);
+      await loadExpenses(currentFilters.category, 'newest', currentFilters.startDate, currentFilters.endDate, 1, 10);
       
       setIdempotencyKey(uuidv4());
       return true;

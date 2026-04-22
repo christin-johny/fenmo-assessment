@@ -16,4 +16,6 @@ export interface PaginationMeta {
   page: number;
   limit: number;
   totalPages: number;
+  globalTotalAmount: number;
+  categoryTotals: Record<string, number>;
 }

@@ -14,7 +14,7 @@ interface CreateExpenseResponse {
 
 export const fetchExpenses = async (
   category?: string, 
-  sortDesc = true,
+  sortBy: string = 'newest',
   startDate?: string,
   endDate?: string,
   page = 1,
@@ -22,7 +22,7 @@ export const fetchExpenses = async (
 ): Promise<{ data: Expense[]; meta: PaginationMeta }> => {
   const params = new URLSearchParams();
   if (category) params.append('category', category);
-  if (sortDesc) params.append('sort', 'date_desc');
+  if (sortBy) params.append('sort', sortBy);
   if (startDate) params.append('startDate', startDate);
   if (endDate) params.append('endDate', endDate);
   params.append('page', page.toString());

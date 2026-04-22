@@ -27,7 +27,7 @@ class ExpenseService {
   public getExpenses(
     userId: string,
     category?: string, 
-    sortDesc?: boolean,
+    sortBy?: string,
     startDate?: string,
     endDate?: string,
     page: number = 1,
@@ -51,12 +51,28 @@ class ExpenseService {
       result = result.filter(e => new Date(e.date) <= new Date(endDate));
     }
 
-    // 4. Sort
-    if (sortDesc) {
+    // 4. Calculate Global Analytics explicitly BEFORE pagination
+    const globalTotalAmount = result.reduce((sum, exp) => sum + exp.amount, 0);
+    const categoryTotals = result.reduce((acc, exp) => {
+      acc[exp.category] = (acc[exp.category] || 0) + exp.amount;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // 5. Sort
+    if (sortBy === 'oldest') {
+      result.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    } else if (sortBy === 'newest') {
+      result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    } else if (sortBy === 'highest') {
+      result.sort((a, b) => b.amount - a.amount);
+    } else if (sortBy === 'lowest') {
+      result.sort((a, b) => a.amount - b.amount);
+    } else {
+      // Default newest
       result.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }
 
-    // 5. Pagination
+    // 6. Pagination
     const total = result.length;
     const totalPages = Math.ceil(total / limit) || 1;
     
@@ -72,7 +88,9 @@ class ExpenseService {
         total,
         page: safePage,
         limit,
-        totalPages
+        totalPages,
+        globalTotalAmount,
+        categoryTotals
       }
     };
   }

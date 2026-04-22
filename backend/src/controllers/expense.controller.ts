@@ -44,10 +44,8 @@ export const getExpenses = asyncHandler(async (req: Request, res: Response) => {
   
   const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
   const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
-  
-  const sortDesc = sortParam === 'date_desc';
 
-  const { data, meta } = expenseService.getExpenses(userId, category, sortDesc, startDate, endDate, page, limit);
+  const { data, meta } = expenseService.getExpenses(userId, category, sortParam, startDate, endDate, page, limit);
 
   res.status(200).json({
     message: 'Expenses fetched successfully',

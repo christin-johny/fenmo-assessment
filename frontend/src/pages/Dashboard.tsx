@@ -19,6 +19,7 @@ export const Dashboard: React.FC = () => {
 
   const [categoryFilter, setCategoryFilter] = useState('');
   const [timeFilter, setTimeFilter] = useState('All');
+  const [sortBy, setSortBy] = useState('newest');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -47,8 +48,8 @@ export const Dashboard: React.FC = () => {
     const { startDate, endDate } = getDates();
     const ctg = categoryFilter === 'All' || categoryFilter === '' ? undefined : categoryFilter;
     
-    loadExpenses(ctg, true, startDate, endDate, currentPage, 10);
-  }, [categoryFilter, timeFilter, customStart, customEnd, currentPage, loadExpenses, getDates]);
+    loadExpenses(ctg, sortBy, startDate, endDate, currentPage, 10);
+  }, [categoryFilter, timeFilter, sortBy, customStart, customEnd, currentPage, loadExpenses, getDates]);
 
   const handlePageChange = (newPage: number) => {
     setCurrentPage(newPage);
@@ -64,6 +65,10 @@ export const Dashboard: React.FC = () => {
     });
   };
 
+  // Directly use the backend global statistics
+  const categoryTotals = meta?.categoryTotals || {};
+  const globalTotalAmount = meta?.globalTotalAmount || 0;
+
   return (
     <div className="h-screen w-full bg-slate-50 flex flex-col overflow-hidden font-sans text-slate-800">
       
@@ -76,9 +81,9 @@ export const Dashboard: React.FC = () => {
         
         {/* Total sum card cleanly integrated into header or top right corner */}
         <div className="bg-slate-100 border border-slate-200 px-4 py-1.5 rounded flex flex-col items-end">
-          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wide">Total Results view</span>
+          <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wide">Global Filtered Total</span>
           <span className="text-lg font-bold text-blue-700 leading-none">
-            {meta ? new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(expenses.reduce((s, e) => s + e.amount, 0)) : '₹0.00'}
+            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(globalTotalAmount)}
           </span>
         </div>
       </header>
@@ -86,13 +91,45 @@ export const Dashboard: React.FC = () => {
       {/* Main Grid Wrapper resolving to 100vh max naturally */}
       <main className="flex-1 flex overflow-hidden p-6 gap-6 max-w-[1400px] w-full mx-auto">
         
-        {/* Left Col: Form fixed */}
-        <div className="w-[320px] shrink-0 flex flex-col min-h-0">
-          <ExpenseForm 
-            onAdd={handleAdd} 
-            isSubmitting={isSubmitting} 
-            error={submitError} 
-          />
+        {/* Left Col: Form and Summary fixed */}
+        <div className="w-[320px] shrink-0 flex flex-col gap-6 min-h-0 overflow-y-auto pr-1">
+          <div className="shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
+            <ExpenseForm 
+              onAdd={handleAdd} 
+              isSubmitting={isSubmitting} 
+              error={submitError} 
+            />
+          </div>
+
+          {/* Category Summary Analytics View */}
+          {expenses.length > 0 && (
+            <div className="shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
+              <h3 className="text-sm font-semibold text-slate-800 mb-3 pb-2 border-b border-slate-100">Category Summary</h3>
+              <div className="space-y-3">
+                {Object.entries(categoryTotals)
+                  .sort(([, a], [, b]) => b - a)
+                  .map(([cat, amount]) => {
+                    const percentage = globalTotalAmount > 0 ? (amount / globalTotalAmount) * 100 : 0;
+                    return (
+                      <div key={cat}>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="font-medium text-slate-600">{cat}</span>
+                          <span className="font-bold text-slate-800">
+                            {new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount)}
+                          </span>
+                        </div>
+                        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                          <div 
+                            className="bg-blue-500 h-1.5 rounded-full transition-all duration-500" 
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Col: Records flexible */}
@@ -127,6 +164,18 @@ export const Dashboard: React.FC = () => {
                 <option value="Last 7 Days">Last 7 Days</option>
                 <option value="This Month">This Month</option>
                 <option value="Custom">Custom Range</option>
+              </select>
+
+              <select 
+                title="Sort By"
+                value={sortBy} 
+                onChange={(e) => { setSortBy(e.target.value); setCurrentPage(1); }}
+                className="text-xs py-1.5 pl-2 pr-6 border border-slate-300 rounded bg-white text-slate-700 outline-none focus:border-blue-500"
+              >
+                <option value="newest">Newest First</option>
+                <option value="oldest">Oldest First</option>
+                <option value="highest">Highest Amount</option>
+                <option value="lowest">Lowest Amount</option>
               </select>
 
               {timeFilter === 'Custom' && (
