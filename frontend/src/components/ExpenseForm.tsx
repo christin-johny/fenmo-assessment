@@ -9,159 +9,202 @@ interface ExpenseFormProps {
   error: string | null;
 }
 
+interface FormValues {
+  amount: string;
+  category: string;
+  description: string;
+  date: string;
+}
+
 export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAdd, isSubmitting, error }) => {
-  const [amount, setAmount] = useState('');
-  const [category, setCategory] = useState('');
-  const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [values, setValues] = useState<FormValues>({
+    amount: '',
+    category: '',
+    description: '',
+    date: new Date().toISOString().split('T')[0]
+  });
 
-  // Frontend specific validation errors
-  const [fieldErrors, setFieldErrors] = useState<{ amount?: string; category?: string; date?: string }>({});
+  const [errors, setErrors] = useState<Partial<FormValues>>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof FormValues, boolean>>>({});
 
-  const validate = (): boolean => {
-    const errors: { amount?: string; category?: string; date?: string } = {};
-    let isValid = true;
-
-    if (!amount || parseFloat(amount) <= 0) {
-      errors.amount = "Amount must be greater than 0.";
-      isValid = false;
+  // Unified validation for single field or all fields
+  const validate = (fieldValues = values): Partial<FormValues> => {
+    const tempErrors: Partial<FormValues> = {};
+    
+    if ('amount' in fieldValues) {
+      if (!fieldValues.amount || parseFloat(fieldValues.amount) <= 0) {
+        tempErrors.amount = "Amount must be > 0";
+      }
+    }
+    if ('category' in fieldValues) {
+      if (!fieldValues.category.trim()) {
+        tempErrors.category = "Category required";
+      }
+    }
+    if ('date' in fieldValues) {
+      if (!fieldValues.date) {
+        tempErrors.date = "Date required";
+      } else if (new Date(fieldValues.date) > new Date()) {
+        tempErrors.date = "No future dates";
+      }
     }
 
-    if (!category.trim()) {
-      errors.category = "Please select a valid category.";
-      isValid = false;
-    }
+    setErrors({ ...errors, ...tempErrors });
+    return tempErrors;
+  };
 
-    if (!date) {
-      errors.date = "Date is securely required.";
-      isValid = false;
-    }
+  const handleBlur = (field: keyof FormValues) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    // Validate only this field on blur
+    validate({ [field]: values[field] } as Partial<FormValues>);
+  };
 
-    setFieldErrors(errors);
-    return isValid;
+  const handleChange = (field: keyof FormValues, value: string) => {
+    setValues(prev => ({ ...prev, [field]: value }));
+    
+    // If the field has an error and user changes it, clear the error immediately
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!validate()) return;
+    
+    // Mark all touched
+    const allTouched = { amount: true, category: true, description: true, date: true };
+    setTouched(allTouched);
+    
+    // Validate all
+    const currentErrors = validate(values);
+    if (Object.keys(currentErrors).length > 0) return;
     
     const payload = {
-      amount: parseFloat(amount),
-      category: category.trim(),
-      description: description.trim(),
-      date: new Date(date).toISOString(),
+      amount: parseFloat(values.amount),
+      category: values.category.trim(),
+      description: values.description.trim(),
+      date: new Date(values.date).toISOString(),
     };
 
     const success = await onAdd(payload);
     
     if (success) {
-      setAmount('');
-      setCategory('');
-      setDescription('');
-      setFieldErrors({}); // Clear validation errors on success
+      setValues({
+        amount: '',
+        category: '',
+        description: '',
+        date: new Date().toISOString().split('T')[0]
+      });
+      setTouched({});
+      setErrors({});
     }
   };
 
-  return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-      <h2 className="text-xl font-semibold mb-4 text-gray-800">Add New Expense</h2>
-      
-      {/* Global backend/network errors */}
-      {error && <ErrorAlert message={error} className="mb-4" />}
+  const hasAnyError = Object.keys(errors).some(k => !!errors[k as keyof FormValues]);
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+  return (
+    <div className="bg-white rounded-lg border border-slate-200 p-4 shadow-sm h-full flex flex-col">
+      <h2 className="text-lg font-semibold text-slate-800 mb-3">Add Record</h2>
+      
+      {error && <ErrorAlert message={error} className="mb-3 p-2 text-xs" />}
+
+      <form onSubmit={handleSubmit} className="flex flex-col flex-1 space-y-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Amount ($) *</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Amount *</label>
           <input
             type="number"
             step="0.01"
-            value={amount}
-            onChange={(e) => {
-              setAmount(e.target.value);
-              if (fieldErrors.amount) setFieldErrors({ ...fieldErrors, amount: undefined });
-            }}
+            value={values.amount}
+            onChange={(e) => handleChange('amount', e.target.value)}
+            onBlur={() => handleBlur('amount')}
             disabled={isSubmitting}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 disabled:opacity-50 transition-colors ${
-              fieldErrors.amount ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-300 focus:ring-accent focus:border-accent'
+            className={`w-full px-2.5 py-1.5 text-sm border rounded bg-slate-50 outline-none transition-colors ${
+              touched.amount && errors.amount 
+                ? 'border-red-400 focus:border-red-500 bg-red-50/30' 
+                : 'border-slate-300 focus:border-blue-500 focus:bg-white'
             }`}
             placeholder="0.00"
           />
-          {fieldErrors.amount && (
-            <p className="text-xs text-red-600 mt-1 flex items-center">
-              <AlertCircle className="w-3 h-3 mr-1" /> {fieldErrors.amount}
+          {touched.amount && errors.amount && (
+            <p className="text-[11px] text-red-500 mt-0.5 flex items-center">
+              <AlertCircle className="w-3 h-3 mr-1" /> {errors.amount}
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Category *</label>
           <select
-            value={category}
-            onChange={(e) => {
-              setCategory(e.target.value);
-              if (fieldErrors.category) setFieldErrors({ ...fieldErrors, category: undefined });
-            }}
+            value={values.category}
+            onChange={(e) => handleChange('category', e.target.value)}
+            onBlur={() => handleBlur('category')}
             disabled={isSubmitting}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 disabled:opacity-50 text-gray-900 transition-colors ${
-              fieldErrors.category ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-300 focus:ring-accent focus:border-accent'
+            className={`w-full px-2.5 py-1.5 text-sm border rounded bg-slate-50 outline-none transition-colors ${
+              touched.category && errors.category 
+                ? 'border-red-400 focus:border-red-500 bg-red-50/30' 
+                : 'border-slate-300 focus:border-blue-500 focus:bg-white'
             }`}
           >
-            <option value="" disabled>Select a category</option>
+            <option value="" disabled>Select category</option>
             <option value="Food">Food</option>
             <option value="Transport">Transport</option>
             <option value="Utilities">Utilities</option>
             <option value="Entertainment">Entertainment</option>
             <option value="Other">Other</option>
           </select>
-          {fieldErrors.category && (
-            <p className="text-xs text-red-600 mt-1 flex items-center">
-              <AlertCircle className="w-3 h-3 mr-1" /> {fieldErrors.category}
+          {touched.category && errors.category && (
+            <p className="text-[11px] text-red-500 mt-0.5 flex items-center">
+              <AlertCircle className="w-3 h-3 mr-1" /> {errors.category}
             </p>
           )}
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Description</label>
           <input
             type="text"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
+            value={values.description}
+            onChange={(e) => handleChange('description', e.target.value)}
+            onBlur={() => handleBlur('description')}
             disabled={isSubmitting}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent focus:border-accent disabled:opacity-50 text-gray-900"
-            placeholder="What was this for?"
+            className="w-full px-2.5 py-1.5 text-sm border border-slate-300 bg-slate-50 rounded focus:border-blue-500 focus:bg-white outline-none transition-colors"
+            placeholder="Optional notes"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
+          <label className="block text-xs font-semibold text-slate-600 mb-1">Date *</label>
           <input
             type="date"
-            value={date}
-            onChange={(e) => {
-              setDate(e.target.value);
-              if (fieldErrors.date) setFieldErrors({ ...fieldErrors, date: undefined });
-            }}
+            max={new Date().toISOString().split('T')[0]}
+            value={values.date}
+            onChange={(e) => handleChange('date', e.target.value)}
+            onBlur={() => handleBlur('date')}
             disabled={isSubmitting}
-            className={`w-full px-3 py-2 border rounded-lg focus:ring-2 disabled:opacity-50 text-gray-900 transition-colors ${
-              fieldErrors.date ? 'border-red-300 focus:ring-red-200 focus:border-red-400' : 'border-gray-300 focus:ring-accent focus:border-accent'
+            className={`w-full px-2.5 py-1.5 text-sm border rounded bg-slate-50 outline-none transition-colors ${
+              touched.date && errors.date 
+                ? 'border-red-400 focus:border-red-500 bg-red-50/30' 
+                : 'border-slate-300 focus:border-blue-500 focus:bg-white'
             }`}
           />
-          {fieldErrors.date && (
-            <p className="text-xs text-red-600 mt-1 flex items-center">
-              <AlertCircle className="w-3 h-3 mr-1" /> {fieldErrors.date}
+          {touched.date && errors.date && (
+            <p className="text-[11px] text-red-500 mt-0.5 flex items-center">
+              <AlertCircle className="w-3 h-3 mr-1" /> {errors.date}
             </p>
           )}
         </div>
+
+        <div className="flex-1" /> {/* Spacer */}
 
         <button
           type="submit"
-          disabled={isSubmitting}
-          className="w-full mt-2 flex items-center justify-center py-2.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-accent hover:bg-accent/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent disabled:opacity-60 transition-colors"
+          disabled={isSubmitting || hasAnyError}
+          className="w-full mt-auto py-2 text-sm font-semibold rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex justify-center items-center"
         >
           {isSubmitting ? (
              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Adding...</>
           ) : (
-            'Add Expense'
+             'Add Expense'
           )}
         </button>
       </form>
