@@ -36,7 +36,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAdd, isSubmitting, e
       }
     }
     if ('category' in fieldValues) {
-      if (!fieldValues.category.trim()) {
+      if (!fieldValues.category?.trim()) {
         tempErrors.category = "Category required";
       }
     }
