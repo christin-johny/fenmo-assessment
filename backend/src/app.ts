@@ -8,10 +8,14 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+import expenseRoutes from './routes/expense.routes';
+
 // Routes Placeholder
 app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok' });
 });
+
+app.use('/expenses', expenseRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
