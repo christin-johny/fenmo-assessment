@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CreateExpenseInput } from '../types/expense';
+import { type CreateExpenseInput } from '../types/expense';
 import { ErrorAlert } from './ui/ErrorAlert';
 import { Loader2, AlertCircle } from 'lucide-react';
 

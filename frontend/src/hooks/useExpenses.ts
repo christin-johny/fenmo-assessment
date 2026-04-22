@@ -1,11 +1,13 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { v4 as uuidv4 } from 'uuid';
-import { Expense, CreateExpenseInput } from '../types/expense';
+import type { Expense, CreateExpenseInput, PaginationMeta } from '../types/expense';
 import * as expenseService from '../services/expenseService';
 import { getErrorMessage } from '../utils/errorHandler';
 
 export const useExpenses = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
+  const [meta, setMeta] = useState<PaginationMeta | null>(null);
+  
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -13,15 +15,23 @@ export const useExpenses = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   
-  // Idempotency Key matching current form instance
+  // Idempotency
   const [idempotencyKey, setIdempotencyKey] = useState<string>(uuidv4());
 
-  const loadExpenses = useCallback(async (category?: string, sortDesc = true) => {
+  const loadExpenses = useCallback(async (
+    category?: string, 
+    sortDesc = true,
+    startDate?: string,
+    endDate?: string,
+    page = 1,
+    limit = 10
+  ) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await expenseService.fetchExpenses(category, sortDesc);
+      const { data, meta } = await expenseService.fetchExpenses(category, sortDesc, startDate, endDate, page, limit);
       setExpenses(data);
+      setMeta(meta);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -29,7 +39,10 @@ export const useExpenses = () => {
     }
   }, []);
 
-  const addExpense = async (expenseData: Omit<CreateExpenseInput, 'idempotencyKey'>) => {
+  const addExpense = async (
+    expenseData: Omit<CreateExpenseInput, 'idempotencyKey'>,
+    currentFilters: { category?: string, startDate?: string, endDate?: string, page?: number }
+  ) => {
     setIsSubmitting(true);
     setSubmitError(null);
     try {
@@ -38,30 +51,22 @@ export const useExpenses = () => {
         idempotencyKey
       });
       
-      // Successfully created, add to list natively (assuming sorting is generic enough or user will refetch)
-      // Best to just reload to enforce correct sorting
-      await loadExpenses();
+      // Reload current page/filters after adding
+      await loadExpenses(currentFilters.category, true, currentFilters.startDate, currentFilters.endDate, 1, 10);
       
-      // Re-roll the idempotency key for the next clean submission!
       setIdempotencyKey(uuidv4());
       return true;
     } catch (err) {
       setSubmitError(getErrorMessage(err));
-      // Look: We DO NOT reset the idempotency key here. If the user clicks submit again,
-      // it retries the exact same key.
       return false;
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    // eslint-disable-next-line
-    loadExpenses();
-  }, [loadExpenses]);
-
   return {
     expenses,
+    meta,
     isLoading,
     error,
     isSubmitting,

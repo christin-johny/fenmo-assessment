@@ -1,5 +1,6 @@
 export interface Expense {
   id: string;
+  userId: string;
   amount: number;
   category: string;
   description: string;
@@ -15,3 +16,10 @@ export type CreateExpenseInput = {
   date: string;
   idempotencyKey: string;
 };
+
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
