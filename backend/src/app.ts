@@ -4,7 +4,6 @@ import { errorHandler } from './middlewares/errorHandler';
 
 const app = express();
 
-// Middlewares
 app.use(cors());
 app.use(express.json());
 
@@ -17,7 +16,6 @@ app.get('/health', (req: Request, res: Response) => {
 
 app.use('/expenses', expenseRoutes);
 
-// Global Error Handler
 app.use(errorHandler);
 
 export default app;

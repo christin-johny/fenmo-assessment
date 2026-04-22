@@ -11,11 +11,9 @@ export const useExpenses = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Form State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   
-  // Idempotency
   const [idempotencyKey, setIdempotencyKey] = useState<string>(uuidv4());
 
   const loadExpenses = useCallback(async (
@@ -51,7 +49,6 @@ export const useExpenses = () => {
         idempotencyKey
       });
       
-      // Reload current page/filters after adding
       await loadExpenses(currentFilters.category, 'newest', currentFilters.startDate, currentFilters.endDate, 1, 10);
       
       setIdempotencyKey(uuidv4());

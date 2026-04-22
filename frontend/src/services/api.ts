@@ -3,7 +3,6 @@ import { v4 as uuidv4 } from 'uuid';
 
 const FINGERPRINT_KEY = 'fenmo_user_fingerprint';
 
-// Get or create unique fingerprint
 const getDeviceFingerprint = () => {
   let fp = localStorage.getItem(FINGERPRINT_KEY);
   if (!fp) {

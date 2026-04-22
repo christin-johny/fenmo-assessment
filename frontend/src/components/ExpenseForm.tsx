@@ -27,8 +27,7 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAdd, isSubmitting, e
   const [errors, setErrors] = useState<Partial<FormValues>>({});
   const [touched, setTouched] = useState<Partial<Record<keyof FormValues, boolean>>>({});
 
-  // Unified validation for single field or all fields
-  const validate = (fieldValues = values): Partial<FormValues> => {
+  const validate = (fieldValues: Partial<FormValues> = values): Partial<FormValues> => {
     const tempErrors: Partial<FormValues> = {};
     
     if ('amount' in fieldValues) {
@@ -55,14 +54,14 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAdd, isSubmitting, e
 
   const handleBlur = (field: keyof FormValues) => {
     setTouched(prev => ({ ...prev, [field]: true }));
-    // Validate only this field on blur
-    validate({ [field]: values[field] } as Partial<FormValues>);
+    const partialValue: Partial<FormValues> = {};
+    partialValue[field] = values[field];
+    validate(partialValue);
   };
 
   const handleChange = (field: keyof FormValues, value: string) => {
     setValues(prev => ({ ...prev, [field]: value }));
     
-    // If the field has an error and user changes it, clear the error immediately
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
@@ -71,11 +70,9 @@ export const ExpenseForm: React.FC<ExpenseFormProps> = ({ onAdd, isSubmitting, e
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Mark all touched
     const allTouched = { amount: true, category: true, description: true, date: true };
     setTouched(allTouched);
     
-    // Validate all
     const currentErrors = validate(values);
     if (Object.keys(currentErrors).length > 0) return;
     

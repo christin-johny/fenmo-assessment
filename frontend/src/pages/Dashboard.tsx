@@ -65,7 +65,6 @@ export const Dashboard: React.FC = () => {
     });
   };
 
-  // Directly use the backend global statistics
   const categoryTotals = meta?.categoryTotals || {};
   const globalTotalAmount = meta?.globalTotalAmount || 0;
 
@@ -79,7 +78,6 @@ export const Dashboard: React.FC = () => {
           <p className="text-xs text-slate-500">Internal Division</p>
         </div>
         
-        {/* Total sum card cleanly integrated into header or top right corner */}
         <div className="bg-slate-100 border border-slate-200 px-4 py-1.5 rounded flex flex-col items-end">
           <span className="text-[10px] uppercase font-bold text-slate-500 tracking-wide">Global Filtered Total</span>
           <span className="text-lg font-bold text-blue-700 leading-none">
@@ -88,10 +86,7 @@ export const Dashboard: React.FC = () => {
         </div>
       </header>
 
-      {/* Main Grid Wrapper resolving to 100vh max naturally */}
       <main className="flex-1 flex overflow-hidden p-6 gap-6 max-w-[1400px] w-full mx-auto">
-        
-        {/* Left Col: Form and Summary fixed */}
         <div className="w-[320px] shrink-0 flex flex-col gap-6 min-h-0 overflow-y-auto pr-1">
           <div className="shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 p-4">
             <ExpenseForm 
@@ -101,7 +96,6 @@ export const Dashboard: React.FC = () => {
             />
           </div>
 
-          {/* Category Summary Analytics View */}
           {expenses.length > 0 && (
             <div className="shrink-0 bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
               <h3 className="text-sm font-semibold text-slate-800 mb-3 pb-2 border-b border-slate-100">Category Summary</h3>
@@ -132,10 +126,7 @@ export const Dashboard: React.FC = () => {
           )}
         </div>
 
-        {/* Right Col: Records flexible */}
         <div className="flex-1 flex flex-col min-w-0 bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-          
-          {/* Top toolbar */}
           <div className="shrink-0 border-b border-slate-200 bg-slate-50/50 p-3 flex flex-wrap gap-3 items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-800">Records</h2>
             
@@ -190,7 +181,6 @@ export const Dashboard: React.FC = () => {
 
           {error && <ErrorAlert message={error} className="m-3 text-xs" />}
           
-          {/* Scrollable list container */}
           <div className="flex-1 overflow-y-auto">
             {isLoading ? (
                <div className="p-4 space-y-3">
